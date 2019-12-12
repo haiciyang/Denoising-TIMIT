@@ -30,13 +30,22 @@ class plain_cnn(nn.Module):
     def __init__(self):
         super().__init__()
         
-        self.conv1 = nn.Conv1d(1, 10, 5)
-        self.conv2 = nn.Conv1d(10, 10, 5, stride=2)        
+#         self.conv1 = nn.Sequential(
+#                    nn.Conv1d(1, 8, 5),
+#                    nn.ReLU())
+        
+#         self.conv2 = nn.Sequential(
+#                    nn.Conv1d(8, 16, 5, stride=2) ,
+#                    nn.ReLU())     
         
 #         self.gru1=nn.GRU(H*126, H2, 1) #gated recurrent unit (GRU) RNN  (input_size, hidden_size, num_layer) 
+        self.conv1 = nn.Conv1d(1, 8, 5)
+        self.conv2 = nn.Conv1d(8, 16, 5, stride=2)        
         
-        self.fc1 = torch.nn.Linear(2530, 1024) #2530  # Applies a linear transformation to the incoming data
+        self.fc1 = torch.nn.Linear(253*16, 1024) #253  # Applies a linear transformation to the incoming data
         self.fc2 = torch.nn.Linear(1024, 513)
+        
+        self.dropout = nn.Dropout(0.5) 
 
         nn.init.kaiming_normal_(self.conv1.weight)
         nn.init.kaiming_normal_(self.conv2.weight)
@@ -45,18 +54,15 @@ class plain_cnn(nn.Module):
 
 
     def forward(self, x):
-#         print(x.shape)
-        x = (F.relu(self.conv1(x.view(64, 1,513))))        
-        x = (F.relu(self.conv2(x)))
-#         print(x.shape)
-        x=x.view(64,-1)
         
-#         h13, _ = self.gru1(h12)
-                
-        x = F.relu(self.fc1(x))       
-        
+        x = F.relu(self.conv1(x.view(-1, 1,513)))  
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        #  x.shape == (N, 16, 253)
+        x = x.view(x.shape[0],-1)                 
+        x = F.relu(self.fc1(x))    
+        x = self.dropout(x)
         x = torch.sigmoid(self.fc2(x))
-
 
         return x
 
